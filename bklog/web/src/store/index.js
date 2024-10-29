@@ -971,8 +971,16 @@ const store = new Vuex.Store({
       // 每次请求这里需要根据选择日期时间这里计算最新的timestamp
       // 最新的 start_time, end_time 也要记录下来，用于字段统计时，保证请求的参数一致
       const { datePickerValue } = state.indexItem;
-      const [start_time, end_time] = handleTransformToTimestamp(datePickerValue);
-      commit('updateIndexItem', { start_time, end_time });
+      const letterRegex = /[a-zA-Z]/;
+      const needTransform = datePickerValue.every(d => letterRegex.test(d));
+
+      const [start_time, end_time] = needTransform
+        ? handleTransformToTimestamp(datePickerValue)
+        : [state.indexItem.start_time, state.indexItem.end_time];
+
+      if (needTransform) {
+        commit('updateIndexItem', { start_time, end_time });
+      }
 
       if (!payload?.isPagination && payload.formChartChange) {
         store.commit('retrieve/updateChartKey');
@@ -993,12 +1001,20 @@ const store = new Vuex.Store({
         ? `/search/index_set/${state.indexId}/search/`
         : '/search/index_set/union_search/';
 
+      const addition = state.indexItem.addition
+        .filter(item => !item.disabled && item.field !== '_ip-select_')
+        .map(item => {
+          const instance = new ConditionOperator(item);
+          return instance.getRequestParam();
+        });
+
       const baseData = {
         bk_biz_id: state.bkBizId,
         size,
         ...otherPrams,
         start_time,
         end_time,
+        addition,
       };
 
       // 更新联合查询的begin
@@ -1324,6 +1340,8 @@ const store = new Vuex.Store({
     },
     requestSearchTotal({ state, getters }) {
       state.searchTotal = 0;
+      const start_time = Math.floor(getters.retrieveParams.start_time);
+      const end_time = Math.ceil(getters.retrieveParams.end_time);
       http
         .request(
           'retrieve/fieldStatisticsTotal',
@@ -1332,6 +1350,8 @@ const store = new Vuex.Store({
               ...getters.retrieveParams,
               bk_biz_id: state.bkBizId,
               index_set_ids: state.indexItem.ids,
+              start_time,
+              end_time,
             },
           },
           {

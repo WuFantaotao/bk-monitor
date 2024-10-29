@@ -245,7 +245,7 @@ class CreateApplicationResource(Resource):
 class CheckDuplicateNameResource(Resource):
     class RequestSerializer(serializers.Serializer):
         bk_biz_id = serializers.IntegerField(label="业务id")
-        app_name = serializers.RegexField(label="应用名称", max_length=50, regex=r"[0-9a-zA-Z_]")
+        app_name = serializers.RegexField(label="应用名称", max_length=50, regex=r"^[a-z0-9_-]+$")
 
     class ResponseSerializer(serializers.Serializer):
         exists = serializers.BooleanField(label="是否存在")
@@ -1728,7 +1728,7 @@ class StorageStatusResource(Resource):
                         if telemetry_handler_registry(data_type.value, app=app).storage_status
                         else StorageStatus.ERROR
                     )
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-except
                     status_mapping[data_type.value] = StorageStatus.ERROR
                     logger.warning(_("获取{type}存储状态失败,详情: {detail}").format(type=data_type.value, detail=e))
         except Application.DoesNotExist:
@@ -1759,7 +1759,7 @@ class DataStatusResource(Resource):
                         if telemetry_handler_registry(data_type.value, app=app).get_data_count(start_time, end_time)
                         else DataStatus.NO_DATA
                     )
-                except ValueError as e:
+                except Exception as e:  # pylint: disable=broad-except
                     status_mapping[data_type.value] = getattr(
                         app, f"{data_type.datasource_type}_data_status", DataStatus.NO_DATA
                     )
