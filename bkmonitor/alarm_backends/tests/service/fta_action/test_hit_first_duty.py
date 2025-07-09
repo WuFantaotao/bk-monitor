@@ -7,7 +7,6 @@ from bkmonitor.models import UserGroup
 
 @pytest.fixture
 def mock_assignee():
-    """创建完全模拟的AlertAssignee实例"""
     # 创建mock对象
     assignee = mock.MagicMock(spec=AlertAssignee)
 
