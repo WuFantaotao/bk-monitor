@@ -828,6 +828,8 @@ class LogUnifyQueryMixin:
         "lt": "lt",
         "gte": "gte",
         "lte": "lte",
+        "is one of": "eq",
+        "is not one of": "neq",
         "wildcard": "wildcard",
         "nwildcard": "nwildcard",
     }
@@ -1708,12 +1710,7 @@ class LogSearchTimeSeriesDataSource(LogUnifyQueryMixin, TimeSeriesDataSource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    # 封装条件方法替换
-    def _replace_condition_method(self):
-        # 如果已经处理过，就直接返回
-        if getattr(self, "_condition_method_replaced", False):
-            return
-
+        # 条件方法替换
         condition_mapping = {
             "eq": "is one of",
             "neq": "is not one of",
@@ -1724,8 +1721,6 @@ class LogSearchTimeSeriesDataSource(LogUnifyQueryMixin, TimeSeriesDataSource):
                 condition["_origin_method"] = method
                 condition["method"] = condition_mapping[method]
 
-        self._condition_method_replaced = True
-
     def query_data(
         self,
         start_time: int = None,
@@ -1733,8 +1728,6 @@ class LogSearchTimeSeriesDataSource(LogUnifyQueryMixin, TimeSeriesDataSource):
         *args,
         **kwargs,
     ) -> list:
-        # 条件方法替换
-        self._replace_condition_method()
         # 日志查询中limit仅能限制返回的原始日志数量，因此固定为1
         if "limit" in kwargs:
             kwargs.pop("limit")
@@ -1750,8 +1743,6 @@ class LogSearchTimeSeriesDataSource(LogUnifyQueryMixin, TimeSeriesDataSource):
         *args,
         **kwargs,
     ) -> list:
-        # 条件方法替换
-        self._replace_condition_method()
         # 日志查询中limit仅能限制返回的原始日志数量，因此固定为1
         if "limit" in kwargs:
             kwargs.pop("limit")
@@ -1771,8 +1762,6 @@ class LogSearchTimeSeriesDataSource(LogUnifyQueryMixin, TimeSeriesDataSource):
         *args,
         **kwargs,
     ) -> tuple[list, int]:
-        # 条件方法替换
-        self._replace_condition_method()
         q = self._get_queryset(
             bk_tenant_id=self.bk_tenant_id,
             query_string=self.query_string,
